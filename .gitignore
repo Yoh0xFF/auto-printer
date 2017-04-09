@@ -1,0 +1,20 @@
+#eclipse
+**/.project
+**/.classpath
+**/.settings/
+**/bin/
+
+# intellij idea
+**/*.iml
+**/.idea/
+
+# netbeans
+**/nbproject/
+**/build/
+**/dist/
+**/build.xml
+**/nb-configuration.xml
+**/manifest.mf
+
+# maven build files
+**/target/
