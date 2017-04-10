@@ -18,6 +18,10 @@
             <source>assembly/run.sh</source>
             <fileMode>755</fileMode>
         </file>
+        <file>
+            <outputDirectory>.</outputDirectory>
+            <source>assembly/config.properties</source>
+        </file>
     </files>
 
     <dependencySets>
