@@ -12,17 +12,17 @@
 
     <includeBaseDirectory>true</includeBaseDirectory>
 
-    <files>
-        <file>
+    <fileSets>
+        <fileSet>
             <outputDirectory>.</outputDirectory>
-            <source>assembly/run.sh</source>
-            <fileMode>755</fileMode>
-        </file>
-        <file>
-            <outputDirectory>.</outputDirectory>
-            <source>assembly/config.properties</source>
-        </file>
-    </files>
+            <directory>assembly</directory>
+            <includes>
+                <include>*.exe</include>
+                <include>*.bat</include>
+                <include>*.properties</include>
+            </includes>
+        </fileSet>
+    </fileSets>
 
     <dependencySets>
         <dependencySet>

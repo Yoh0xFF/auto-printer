@@ -1,22 +1,22 @@
 REM install service
-TestServ12345.exe //IS//TestServ12345 ^
-    --Description "TestServ12345" ^
-    --DisplayName "TestServ12345" ^
-    --Install "%cd%TestServ12345.exe" ^
+AutoPrinterX64.exe //IS//AutoPrinterX64 ^
+    --Description "Auto printer" ^
+    --DisplayName "AutoPrinter" ^
+    --Install "%cd%\AutoPrinterX64.exe" ^
     --LogPath "%cd%\logs" ^
     --StdOutput auto ^
     --StdError auto ^
-    --Classpath run.jar ^
+    --Classpath "run.jar" ^
     --Jvm "%JAVA_HOME%\jre\bin\server\jvm.dll" ^
     --StartMode jvm ^
     --StopMode jvm ^
     --StartPath "%cd%" ^
     --StopPath "%cd%" ^
-    --StartClass util.TestService ^
-    --StopClass util.TestService ^
+    --StartClass util.AutoPrinter ^
+    --StopClass util.AutoPrinter ^
     --StartMethod start ^
     --StopMethod stop ^
     --Startup auto
 
 REM start service
-TestServ12345.exe //ES//TestServ12345
+AutoPrinterX64.exe //ES//AutoPrinterX64

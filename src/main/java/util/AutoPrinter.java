@@ -5,6 +5,7 @@ import java.awt.print.PrinterJob;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +32,7 @@ public class AutoPrinter {
 
     private static final Logger LOGGER;
     private static final String PRINTER_NAME;
+    private static final String WATCH_DIR;
     private static final String FILE_MIME_TYPE;
     private static final String FILE_NAME_PATTERN;
 
@@ -48,19 +50,21 @@ public class AutoPrinter {
         }
 
         PRINTER_NAME = props.getProperty("printerName");
+        WATCH_DIR = props.getProperty("watchDir");
         FILE_MIME_TYPE = props.getProperty("fileMimeType");
         FILE_NAME_PATTERN = props.getProperty("fileNamePattern");
     }
 
+    private static AutoPrinter instance;
     private final Path dir;
     private final WatchService watcher;
     private final Pattern fileNamePattern;
     private final List<Path> trash;
 
-    public AutoPrinter() throws IOException {
+    private AutoPrinter() throws IOException {
         watcher = FileSystems.getDefault().newWatchService();
         
-        dir = Paths.get(System.getProperty("user.home") + "/Downloads");
+        dir = Paths.get(WATCH_DIR);
         dir.register(watcher, ENTRY_CREATE);
         
         fileNamePattern = Pattern.compile(FILE_NAME_PATTERN);
@@ -68,13 +72,16 @@ public class AutoPrinter {
         trash = new LinkedList<>();
     }
 
-    public void processEvents() {
+    private void processEvents() {
         while (true) {
             WatchKey crntWatchKey;
             try {
                 crntWatchKey = watcher.take();
             } catch (InterruptedException ex) {
                 LOGGER.error("Watcher interrupted!", ex);
+                return;
+            } catch (ClosedWatchServiceException ex) {
+                LOGGER.info("Watcher is closed!");
                 return;
             }
             
@@ -112,7 +119,7 @@ public class AutoPrinter {
         }
     }
 
-    public void print(Path path) {
+    private void print(Path path) {
         PrintService[] printServices = PrintServiceLookup.lookupPrintServices(null, null);
 
         PrintService defaultPrintService = null;
@@ -148,11 +155,24 @@ public class AutoPrinter {
         }
     }
 
-    public static void main(String[] args) {
+    public static void stop(String[] args) {
         try {
-            new AutoPrinter().processEvents();
+            instance.watcher.close();
+        } catch (IOException ex) {
+            LOGGER.error("Watcher close failed!", ex);
+        }
+    }
+    
+    public static void start(String[] args) {
+        try {
+            instance = new AutoPrinter();
+            instance.processEvents();
         } catch (Exception ex) {
             LOGGER.error("Watcher startup failed!", ex);
         }
+    }
+    
+    public static void main(String[] args) {
+        start(args);
     }
 }
