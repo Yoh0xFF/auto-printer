@@ -18,3 +18,4 @@
 
 # maven build files
 **/target/
+**/logs/
