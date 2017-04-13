@@ -23,6 +23,7 @@ import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
+import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -79,10 +80,10 @@ public class AutoPrinter {
                 crntWatchKey = watcher.take();
             } catch (InterruptedException ex) {
                 LOGGER.error("Watcher interrupted!", ex);
-                return;
+                break;
             } catch (ClosedWatchServiceException ex) {
                 LOGGER.info("Watcher is closed!");
-                return;
+                break;
             }
             
             while (!trash.isEmpty()) {
@@ -100,7 +101,7 @@ public class AutoPrinter {
                 try {
                     String mimeType = Files.probeContentType(path);
 
-                    LOGGER.info("{}, {}, {}\n", event.kind().name(), path, mimeType);
+                    LOGGER.info("{}, {}, {}\n", event.kind().name(), path, StringUtils.isBlank(mimeType) ? "Unknown" : mimeType);
                     
                     if (FILE_MIME_TYPE.equals(mimeType) && fileNamePattern.matcher(path.toFile().getName()).matches()) {
                         print(path);
@@ -149,7 +150,7 @@ public class AutoPrinter {
             }
             LOGGER.info("Printing file: {}!", path);
         } catch (IOException ex) {
-            LOGGER.error(String.format("File real failed: %s!", path.toString()), ex);
+            LOGGER.error(String.format("File read failed: %s!", path.toString()), ex);
         } catch (PrinterException ex) {
             LOGGER.error(String.format("File print failed: %s!", path.toString()), ex);
         }
