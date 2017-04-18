@@ -7,7 +7,7 @@ AutoPrinterX64.exe //IS//AutoPrinterX64 ^
     --StdOutput auto ^
     --StdError auto ^
     --Classpath "run.jar" ^
-    --Jvm "%JAVA_HOME%\jre\bin\server\jvm.dll" ^
+    --Jvm "%JAVA_HOME%\bin\server\jvm.dll" ^
     --StartMode jvm ^
     --StopMode jvm ^
     --StartPath "%cd%" ^

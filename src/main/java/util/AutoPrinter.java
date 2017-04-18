@@ -18,11 +18,13 @@ import java.nio.file.WatchService;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.Level;
 import java.util.regex.Pattern;
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,14 +41,14 @@ public class AutoPrinter {
 
     static {
         LOGGER = LogManager.getLogger(AutoPrinter.class.getName());
-        
+
         Properties props = new Properties();
-        try (InputStream in = Files.exists(Paths.get("./config.properties")) 
+        try (InputStream in = Files.exists(Paths.get("./config.properties"))
                 ? new FileInputStream("./config.properties")
                 : AutoPrinter.class.getResourceAsStream("/config.properties")) {
             props.load(in);
         } catch (IOException | NullPointerException ex) {
-            LOGGER.error("Application configuration not found!", ex);
+            LOGGER.error("Application configuration not found!\n", ex);
             throw new AssertionError("Application configuration not found", ex);
         }
 
@@ -64,12 +66,12 @@ public class AutoPrinter {
 
     private AutoPrinter() throws IOException {
         watcher = FileSystems.getDefault().newWatchService();
-        
+
         dir = Paths.get(WATCH_DIR);
         dir.register(watcher, ENTRY_CREATE);
-        
+
         fileNamePattern = Pattern.compile(FILE_NAME_PATTERN);
-        
+
         trash = new LinkedList<>();
     }
 
@@ -79,13 +81,13 @@ public class AutoPrinter {
             try {
                 crntWatchKey = watcher.take();
             } catch (InterruptedException ex) {
-                LOGGER.error("Watcher interrupted!", ex);
+                LOGGER.error("Watcher interrupted!\n", ex);
                 break;
             } catch (ClosedWatchServiceException ex) {
-                LOGGER.info("Watcher is closed!");
+                LOGGER.info("Watcher is closed!\n");
                 break;
             }
-            
+
             while (!trash.isEmpty()) {
                 trash.get(0).toFile().delete();
                 trash.remove(0);
@@ -95,26 +97,26 @@ public class AutoPrinter {
                 if (event.kind() == OVERFLOW) {
                     continue;
                 }
-                
+
                 Path path = dir.resolve(((WatchEvent<Path>) event).context());
-                
+
                 try {
                     String mimeType = Files.probeContentType(path);
 
                     LOGGER.info("{}, {}, {}\n", event.kind().name(), path, StringUtils.isBlank(mimeType) ? "Unknown" : mimeType);
-                    
+
                     if (FILE_MIME_TYPE.equals(mimeType) && fileNamePattern.matcher(path.toFile().getName()).matches()) {
                         print(path);
                         trash.add(path);
                     }
                 } catch (IOException ex) {
-                    LOGGER.error(String.format("Cannot read file: %s!", path.toString()), ex);
+                    LOGGER.error(String.format("Cannot read file: %s!\n", path.toString()), ex);
                 }
             }
 
             boolean valid = crntWatchKey.reset();
             if (!valid) {
-                LOGGER.error("WatchKey reset failed!");
+                LOGGER.error("WatchKey reset failed!\n");
                 break;
             }
         }
@@ -130,29 +132,46 @@ public class AutoPrinter {
                 break;
             }
         }
-        
+
         if (defaultPrintService == null) {
-            LOGGER.error("Printer with specified name: {}, not found!", PRINTER_NAME);
+            LOGGER.error("Printer with specified name: {}, not found!\n", PRINTER_NAME);
             return;
         }
-        
+
+        boolean locked = true;
+        while (locked) {
+            try {
+                FileUtils.touch(path.toFile());
+                locked = false;
+            } catch (IOException ex) {
+                locked = ex.getMessage().contains("used by another process");
+            }
+
+            if (locked) {
+                try {
+                    Thread.sleep(1000L);
+                } catch (InterruptedException ex) {
+                }
+            }
+        }
+
         int n = path.toFile().getName().toLowerCase().contains("thermal") ? 2 : 1;
-        
+
         try (PDDocument pdfDoc = PDDocument.load(path.toFile())) {
             PrinterJob printerJob = PrinterJob.getPrinterJob();
             printerJob.setPageable(new PDFPageable(pdfDoc));
             printerJob.setPrintService(defaultPrintService);
-            
+
             PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
-            
+
             for (int i = 0; i < n; ++i) {
                 printerJob.print(attributes);
             }
-            LOGGER.info("Printing file: {}!", path);
+            LOGGER.info("Printing file: {}!\n", path);
         } catch (IOException ex) {
-            LOGGER.error(String.format("File read failed: %s!", path.toString()), ex);
+            LOGGER.error(String.format("File read failed: %s!\n", path.toString()), ex);
         } catch (PrinterException ex) {
-            LOGGER.error(String.format("File print failed: %s!", path.toString()), ex);
+            LOGGER.error(String.format("File print failed: %s!\n", path.toString()), ex);
         }
     }
 
@@ -160,19 +179,19 @@ public class AutoPrinter {
         try {
             instance.watcher.close();
         } catch (IOException ex) {
-            LOGGER.error("Watcher close failed!", ex);
+            LOGGER.error("Watcher close failed!\n", ex);
         }
     }
-    
+
     public static void start(String[] args) {
         try {
             instance = new AutoPrinter();
             instance.processEvents();
         } catch (Exception ex) {
-            LOGGER.error("Watcher startup failed!", ex);
+            LOGGER.error("Watcher startup failed!\n", ex);
         }
     }
-    
+
     public static void main(String[] args) {
         start(args);
     }
