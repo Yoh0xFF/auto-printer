@@ -23,7 +23,6 @@ import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,7 +34,6 @@ public class AutoPrinter {
     private static final Logger LOGGER;
     private static final String PRINTER_NAME;
     private static final String WATCH_DIR;
-    private static final String FILE_MIME_TYPE;
     private static final String FILE_NAME_PATTERN;
 
     static {
@@ -53,7 +51,6 @@ public class AutoPrinter {
 
         PRINTER_NAME = props.getProperty("printerName");
         WATCH_DIR = props.getProperty("watchDir");
-        FILE_MIME_TYPE = props.getProperty("fileMimeType");
         FILE_NAME_PATTERN = props.getProperty("fileNamePattern");
     }
 
@@ -104,7 +101,7 @@ public class AutoPrinter {
 
                     LOGGER.info("{}, {}, {}\n", event.kind().name(), path, StringUtils.isBlank(mimeType) ? "Unknown" : mimeType);
 
-                    if (FILE_MIME_TYPE.equals(mimeType) && fileNamePattern.matcher(path.toFile().getName()).matches()) {
+                    if (fileNamePattern.matcher(path.toFile().getName()).matches()) {
                         print(path);
                         trash.add(path);
                     }
@@ -139,8 +136,7 @@ public class AutoPrinter {
 
         boolean locked = true;
         while (locked) {
-            try {
-                FileUtils.touch(path.toFile());
+            try (FileInputStream is = new FileInputStream(path.toFile())) {
                 locked = false;
             } catch (IOException ex) {
                 locked = ex.getMessage().contains("used by another process");
