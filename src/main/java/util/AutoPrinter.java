@@ -85,7 +85,9 @@ public class AutoPrinter {
             }
 
             while (!trash.isEmpty()) {
-                trash.get(0).toFile().delete();
+                if (trash.get(0).toFile().exists()) {
+                    trash.get(0).toFile().delete();
+                }
                 trash.remove(0);
             }
 
@@ -133,7 +135,8 @@ public class AutoPrinter {
             LOGGER.error("Printer with specified name: {}, not found!\n", PRINTER_NAME);
             return;
         }
-
+        
+        // After download some browsers scan file for viruses and because of this file is locked
         boolean locked = true;
         while (locked) {
             try (FileInputStream is = new FileInputStream(path.toFile())) {
@@ -148,6 +151,11 @@ public class AutoPrinter {
                 } catch (InterruptedException ex) {
                 }
             }
+        }
+        
+        // Old browsers create temporary files while downloading and then delete it
+        if (!path.toFile().exists()) {
+            return;
         }
 
         int n = path.toFile().getName().toLowerCase().contains("thermal") ? 2 : 1;
