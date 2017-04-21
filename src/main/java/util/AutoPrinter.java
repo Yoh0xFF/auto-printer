@@ -23,7 +23,6 @@ import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
-import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -98,17 +97,10 @@ public class AutoPrinter {
 
                 Path path = dir.resolve(((WatchEvent<Path>) event).context());
 
-                try {
-                    String mimeType = Files.probeContentType(path);
+                LOGGER.info("{}, {}\n", event.kind().name(), path);
 
-                    LOGGER.info("{}, {}, {}\n", event.kind().name(), path, StringUtils.isBlank(mimeType) ? "Unknown" : mimeType);
-
-                    if (fileNamePattern.matcher(path.toFile().getName()).matches()) {
-                        print(path);
-                        trash.add(path);
-                    }
-                } catch (IOException ex) {
-                    LOGGER.error(String.format("Cannot read file: %s!\n", path.toString()), ex);
+                if (fileNamePattern.matcher(path.toFile().getName()).matches()) {
+                    print(path);
                 }
             }
 
@@ -135,7 +127,7 @@ public class AutoPrinter {
             LOGGER.error("Printer with specified name: {}, not found!\n", PRINTER_NAME);
             return;
         }
-        
+
         // After download some browsers scan file for viruses and because of this file is locked
         boolean locked = true;
         while (locked) {
@@ -152,30 +144,49 @@ public class AutoPrinter {
                 }
             }
         }
-        
+
         // Old browsers create temporary files while downloading and then delete it
         if (!path.toFile().exists()) {
             return;
         }
 
         int n = path.toFile().getName().toLowerCase().contains("thermal") ? 2 : 1;
+        int cnt = 3;
+        
+        // Some browsers doesn't create temorary files, and we have wait for download to finish.
+        // We are waiting only 3 seconds
+        while (cnt > 0) {
+            try (PDDocument pdfDoc = PDDocument.load(path.toFile())) {
+                PrinterJob printerJob = PrinterJob.getPrinterJob();
+                printerJob.setPageable(new PDFPageable(pdfDoc));
+                printerJob.setPrintService(defaultPrintService);
 
-        try (PDDocument pdfDoc = PDDocument.load(path.toFile())) {
-            PrinterJob printerJob = PrinterJob.getPrinterJob();
-            printerJob.setPageable(new PDFPageable(pdfDoc));
-            printerJob.setPrintService(defaultPrintService);
+                PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
 
-            PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
-
-            for (int i = 0; i < n; ++i) {
-                printerJob.print(attributes);
+                for (int i = 0; i < n; ++i) {
+                    printerJob.print(attributes);
+                }
+                
+                LOGGER.info("Printing file: {}!\n", path);
+                
+                cnt = 0;
+            } catch (IOException ex) {
+                try {
+                    Thread.sleep(1000L);
+                } catch (InterruptedException ex1) {
+                }
+                
+                --cnt;
+                
+                if (cnt == 0) {
+                    LOGGER.error(String.format("File read failed: %s!\n", path.toString()), ex);
+                }
+            } catch (PrinterException ex) {
+                LOGGER.error(String.format("File print failed: %s!\n", path.toString()), ex);
             }
-            LOGGER.info("Printing file: {}!\n", path);
-        } catch (IOException ex) {
-            LOGGER.error(String.format("File read failed: %s!\n", path.toString()), ex);
-        } catch (PrinterException ex) {
-            LOGGER.error(String.format("File print failed: %s!\n", path.toString()), ex);
         }
+
+        trash.add(path);
     }
 
     public static void stop(String[] args) {
