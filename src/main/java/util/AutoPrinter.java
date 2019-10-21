@@ -1,5 +1,14 @@
 package util;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.printing.PDFPageable;
+
+import javax.print.PrintService;
+import javax.print.PrintServiceLookup;
+import javax.print.attribute.HashPrintRequestAttributeSet;
+import javax.print.attribute.PrintRequestAttributeSet;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.FileInputStream;
@@ -10,8 +19,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
@@ -19,24 +26,19 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
-import javax.print.PrintService;
-import javax.print.PrintServiceLookup;
-import javax.print.attribute.HashPrintRequestAttributeSet;
-import javax.print.attribute.PrintRequestAttributeSet;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.printing.PDFPageable;
+
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 
 public class AutoPrinter {
 
-    private static final Logger LOGGER;
+    private static final Logger logger;
     private static final String PRINTER_NAME;
     private static final String WATCH_DIR;
     private static final String FILE_NAME_PATTERN;
 
     static {
-        LOGGER = LogManager.getLogger(AutoPrinter.class.getName());
+        logger = LogManager.getLogger(AutoPrinter.class.getName());
 
         Properties props = new Properties();
         try (InputStream in = Files.exists(Paths.get("./config.properties"))
@@ -44,7 +46,7 @@ public class AutoPrinter {
                 : AutoPrinter.class.getResourceAsStream("/config.properties")) {
             props.load(in);
         } catch (IOException | NullPointerException ex) {
-            LOGGER.error("Application configuration not found!\n", ex);
+            logger.error("Application configuration not found!\n", ex);
             throw new AssertionError("Application configuration not found", ex);
         }
 
@@ -76,10 +78,10 @@ public class AutoPrinter {
             try {
                 crntWatchKey = watcher.take();
             } catch (InterruptedException ex) {
-                LOGGER.error("Watcher interrupted!\n", ex);
+                logger.error("Watcher interrupted!\n", ex);
                 break;
             } catch (ClosedWatchServiceException ex) {
-                LOGGER.info("Watcher is closed!\n");
+                logger.info("Watcher is closed!\n");
                 break;
             }
 
@@ -97,7 +99,7 @@ public class AutoPrinter {
 
                 Path path = dir.resolve(((WatchEvent<Path>) event).context());
 
-                LOGGER.info("{}, {}\n", event.kind().name(), path);
+                logger.info("{}, {}\n", event.kind().name(), path);
 
                 if (fileNamePattern.matcher(path.toFile().getName()).matches()) {
                     print(path);
@@ -106,7 +108,7 @@ public class AutoPrinter {
 
             boolean valid = crntWatchKey.reset();
             if (!valid) {
-                LOGGER.error("WatchKey reset failed!\n");
+                logger.error("WatchKey reset failed!\n");
                 break;
             }
         }
@@ -124,7 +126,7 @@ public class AutoPrinter {
         }
 
         if (defaultPrintService == null) {
-            LOGGER.error("Printer with specified name: {}, not found!\n", PRINTER_NAME);
+            logger.error("Printer with specified name: {}, not found!\n", PRINTER_NAME);
             return;
         }
 
@@ -167,7 +169,7 @@ public class AutoPrinter {
                     printerJob.print(attributes);
                 }
                 
-                LOGGER.info("Printing file: {}!\n", path);
+                logger.info("Printing file: {}!\n", path);
                 
                 cnt = 0;
             } catch (IOException ex) {
@@ -179,10 +181,10 @@ public class AutoPrinter {
                 --cnt;
                 
                 if (cnt == 0) {
-                    LOGGER.error(String.format("File read failed: %s!\n", path.toString()), ex);
+                    logger.error(String.format("File read failed: %s!\n", path.toString()), ex);
                 }
             } catch (PrinterException ex) {
-                LOGGER.error(String.format("File print failed: %s!\n", path.toString()), ex);
+                logger.error(String.format("File print failed: %s!\n", path.toString()), ex);
             }
         }
 
@@ -193,7 +195,7 @@ public class AutoPrinter {
         try {
             instance.watcher.close();
         } catch (IOException ex) {
-            LOGGER.error("Watcher close failed!\n", ex);
+            logger.error("Watcher close failed!\n", ex);
         }
     }
 
@@ -202,7 +204,7 @@ public class AutoPrinter {
             instance = new AutoPrinter();
             instance.processEvents();
         } catch (Exception ex) {
-            LOGGER.error("Watcher startup failed!\n", ex);
+            logger.error("Watcher startup failed!\n", ex);
         }
     }
 
