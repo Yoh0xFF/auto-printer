@@ -1,0 +1,1 @@
+# Auto prints new PDF files in the directory with default printer
