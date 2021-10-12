@@ -4,43 +4,43 @@
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 
         http://maven.apache.org/xsd/assembly-1.1.2.xsd">
 
-    <id>bin</id>
+  <id>bin</id>
 
-    <formats>
-        <format>zip</format>
-    </formats>
+  <formats>
+    <format>zip</format>
+  </formats>
 
-    <includeBaseDirectory>true</includeBaseDirectory>
+  <includeBaseDirectory>true</includeBaseDirectory>
 
-    <fileSets>
-        <fileSet>
-            <outputDirectory>.</outputDirectory>
-            <directory>assembly</directory>
-            <includes>
-                <include>*.exe</include>
-                <include>*.bat</include>
-                <include>*.properties</include>
-            </includes>
-        </fileSet>
-    </fileSets>
+  <fileSets>
+    <fileSet>
+      <outputDirectory>.</outputDirectory>
+      <directory>assembly</directory>
+      <includes>
+        <include>*.exe</include>
+        <include>*.bat</include>
+        <include>*.properties</include>
+      </includes>
+    </fileSet>
+  </fileSets>
 
-    <dependencySets>
-        <dependencySet>
-            <outputDirectory>.</outputDirectory>
-            <outputFileNameMapping>run.jar</outputFileNameMapping>
-            <unpack>false</unpack>
-            <includes>
-                <include>${artifact}</include>
-            </includes>
-        </dependencySet>
-        
-        <dependencySet>
-            <outputDirectory>/lib</outputDirectory>
-            <unpack>false</unpack>
-            <excludes>
-                <exclude>${artifact}</exclude>
-            </excludes>
-        </dependencySet>
-    </dependencySets>
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>.</outputDirectory>
+      <outputFileNameMapping>run.jar</outputFileNameMapping>
+      <unpack>false</unpack>
+      <includes>
+        <include>${artifact}</include>
+      </includes>
+    </dependencySet>
+
+    <dependencySet>
+      <outputDirectory>/lib</outputDirectory>
+      <unpack>false</unpack>
+      <excludes>
+        <exclude>${artifact}</exclude>
+      </excludes>
+    </dependencySet>
+  </dependencySets>
 
 </assembly>
