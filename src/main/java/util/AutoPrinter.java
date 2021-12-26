@@ -97,6 +97,7 @@ public class AutoPrinter {
           continue;
         }
 
+        @SuppressWarnings("unchecked")
         Path path = dir.resolve(((WatchEvent<Path>) event).context());
 
         logger.info("{}, {}\n", event.kind().name(), path);
