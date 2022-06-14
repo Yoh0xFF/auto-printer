@@ -13,7 +13,6 @@ import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -40,10 +39,10 @@ public class AutoPrinter {
   static {
     logger = LogManager.getLogger(AutoPrinter.class.getName());
 
-    Properties props = new Properties();
-    try (InputStream in = Files.exists(Paths.get("./config.properties"))
-      ? new FileInputStream("./config.properties")
-      : AutoPrinter.class.getResourceAsStream("/config.properties")) {
+    var props = new Properties();
+    try (var in = Files.exists(Paths.get("./config.properties"))
+        ? new FileInputStream("./config.properties")
+        : AutoPrinter.class.getResourceAsStream("/config.properties")) {
       props.load(in);
     } catch (IOException | NullPointerException ex) {
       logger.error("Application configuration not found!\n", ex);
@@ -107,7 +106,7 @@ public class AutoPrinter {
         }
       }
 
-      boolean valid = crntWatchKey.reset();
+      var valid = crntWatchKey.reset();
       if (!valid) {
         logger.error("WatchKey reset failed!\n");
         break;
@@ -116,10 +115,10 @@ public class AutoPrinter {
   }
 
   private void print(Path path) {
-    PrintService[] printServices = PrintServiceLookup.lookupPrintServices(null, null);
+    var printServices = PrintServiceLookup.lookupPrintServices(null, null);
 
     PrintService defaultPrintService = null;
-    for (PrintService printService : printServices) {
+    for (var printService : printServices) {
       if (printService.getName().equals(PRINTER_NAME)) {
         defaultPrintService = printService;
         break;
@@ -131,10 +130,11 @@ public class AutoPrinter {
       return;
     }
 
-    // After download some browsers scan file for viruses and because of this file is locked
-    boolean locked = true;
+    // After download some browsers scan file for viruses and because of this file
+    // is locked
+    var locked = true;
     while (locked) {
-      try (FileInputStream is = new FileInputStream(path.toFile())) {
+      try (var is = new FileInputStream(path.toFile())) {
         locked = false;
       } catch (IOException ex) {
         locked = ex.getMessage().contains("used by another process");
@@ -156,11 +156,12 @@ public class AutoPrinter {
     int n = path.toFile().getName().toLowerCase().contains("thermal") ? 2 : 1;
     int cnt = 3;
 
-    // Some browsers doesn't create temorary files, and we have wait for download to finish.
+    // Some browsers doesn't create temorary files, and we have wait for download to
+    // finish.
     // We are waiting only 3 seconds
     while (cnt > 0) {
-      try (PDDocument pdfDoc = PDDocument.load(path.toFile())) {
-        PrinterJob printerJob = PrinterJob.getPrinterJob();
+      try (var pdfDoc = PDDocument.load(path.toFile())) {
+        var printerJob = PrinterJob.getPrinterJob();
         printerJob.setPageable(new PDFPageable(pdfDoc));
         printerJob.setPrintService(defaultPrintService);
 
